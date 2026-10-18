@@ -1,27 +1,32 @@
 import {
-    getAllVerbs,
     getVerbById,
     isPastAnswerCorrect,
-    getPrimaryPastDisplay
+    isTranslationAnswerCorrect,
+    getPrimaryPastDisplay,
+    getPrimaryTranslationDisplay
 } from './verbs.js';
+import {
+    getMaxLevel,
+    getVerbPoolForLevel,
+    getNewVerbsForLevel,
+    getPreviousVerbsForLevel,
+    getBatchIndex,
+    getLevelVariant,
+    getQuestionsPerLevel,
+    getTimeLimitForLevel,
+    getLevelDescription,
+    VERBS_PER_BATCH
+} from './levelConfig.js';
 
 const GameLogic = {
-    levels: [
-        { level: 1, timeLimitSeconds: 10, mode: 'mc' },
-        { level: 2, timeLimitSeconds: 8, mode: 'mixed' },
-        { level: 3, timeLimitSeconds: 6, mode: 'typing' }
-    ],
-
     successThreshold: 0.8,
 
     currentLevel: 1,
     currentQuestion: 0,
     correctAnswers: 0,
     wrongAnswers: 0,
-    currentVerbId: null,
-    lastVerbId: null,
     verbStats: {},
-    questionTypes: [],
+    questionQueue: [],
 
     init(level, verbStats) {
         this.currentLevel = level || 1;
@@ -29,163 +34,199 @@ const GameLogic = {
         this.correctAnswers = 0;
         this.wrongAnswers = 0;
         this.verbStats = verbStats || {};
-        this.lastVerbId = null;
-        this.currentVerbId = null;
+        this.questionQueue = [];
 
-        if (this.currentLevel < 1) this.currentLevel = 1;
-        if (this.currentLevel > this.levels.length) {
-            this.currentLevel = this.levels.length;
+        if (this.currentLevel < 1) {
+            this.currentLevel = 1;
+        }
+        const max = getMaxLevel();
+        if (this.currentLevel > max) {
+            this.currentLevel = max;
         }
     },
 
     getQuestionsPerLevel() {
-        return Math.max(1, getAllVerbs().length);
+        return getQuestionsPerLevel(this.currentLevel);
     },
 
     getCurrentLevelConfig() {
-        const base = this.levels[this.currentLevel - 1];
+        const variant = getLevelVariant(this.currentLevel);
         return {
-            ...base,
-            questionsPerLevel: this.getQuestionsPerLevel()
+            level: this.currentLevel,
+            questionsPerLevel: this.getQuestionsPerLevel(),
+            inputMode: variant.inputMode,
+            skill: variant.skill,
+            timeLimitSeconds: getTimeLimitForLevel(this.currentLevel),
+            description: getLevelDescription(this.currentLevel)
         };
     },
 
-    buildQuestionTypeQueue() {
-        const config = this.getCurrentLevelConfig();
-        const n = config.questionsPerLevel;
-        let types = [];
+    buildQuestionQueue() {
+        const batchIndex = getBatchIndex(this.currentLevel);
+        const newVerbs = getNewVerbsForLevel(this.currentLevel);
+        const previousVerbs = getPreviousVerbsForLevel(this.currentLevel);
+        const pool = getVerbPoolForLevel(this.currentLevel);
+        const { inputMode } = getLevelVariant(this.currentLevel);
+        const targetCount = getQuestionsPerLevel(this.currentLevel);
+        const queue = [];
 
-        if (config.mode === 'mc') {
-            types = Array(n).fill('mc');
-        } else if (config.mode === 'typing') {
-            types = Array(n).fill('typing');
-        } else {
-            const half = Math.floor(n / 2);
-            types = [...Array(half).fill('mc'), ...Array(n - half).fill('typing')];
-            for (let i = types.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [types[i], types[j]] = [types[j], types[i]];
+        const pushQuestion = (verb) => {
+            queue.push({
+                verbId: verb.id,
+                skill: Math.random() < 0.5 ? 'past' : 'translation',
+                inputMode
+            });
+        };
+
+        newVerbs.forEach((verb) => pushQuestion(verb));
+
+        if (batchIndex > 0 && previousVerbs.length > 0) {
+            const minReview = Math.min(
+                VERBS_PER_BATCH,
+                previousVerbs.length,
+                Math.max(0, targetCount - newVerbs.length)
+            );
+            for (let i = 0; i < minReview; i++) {
+                const verb =
+                    previousVerbs[Math.floor(Math.random() * previousVerbs.length)];
+                pushQuestion(verb);
             }
         }
 
-        this.questionTypes = types;
+        while (queue.length < targetCount && pool.length > 0) {
+            const verb = pool[Math.floor(Math.random() * pool.length)];
+            pushQuestion(verb);
+        }
+
+        if (queue.length > targetCount) {
+            queue.length = targetCount;
+        }
+
+        for (let i = queue.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [queue[i], queue[j]] = [queue[j], queue[i]];
+        }
+
+        this.questionQueue = queue;
+    },
+
+    getCurrentQuestionSpec() {
+        return this.questionQueue[this.currentQuestion - 1] || null;
     },
 
     getCurrentQuestionType() {
-        return this.questionTypes[this.currentQuestion - 1] || 'mc';
+        const spec = this.getCurrentQuestionSpec();
+        return spec ? spec.inputMode : 'mc';
     },
 
-    pickVerbId() {
-        const verbs = getAllVerbs();
-        if (verbs.length === 0) {
-            return null;
-        }
-
-        const ids = verbs.map((v) => v.id);
-        let pool = this.lastVerbId ? ids.filter((id) => id !== this.lastVerbId) : ids;
-        if (pool.length === 0) {
-            pool = ids;
-        }
-
-        const weights = pool.map((id) => {
-            const stats = this.verbStats[id] || { correct: 0, wrong: 0 };
-            const wrong = stats.wrong || 0;
-            let weight = 1;
-            if (wrong > 0) {
-                weight = 1 + wrong * 1.5;
-            }
-            return { id, weight };
-        });
-
-        const total = weights.reduce((sum, w) => sum + w.weight, 0);
-        let random = Math.random() * total;
-        let selected = pool[0];
-        for (const { id, weight } of weights) {
-            random -= weight;
-            if (random <= 0) {
-                selected = id;
-                break;
-            }
-        }
-
-        this.lastVerbId = this.currentVerbId;
-        this.currentVerbId = selected;
-        return selected;
+    getCurrentSkill() {
+        const spec = this.getCurrentQuestionSpec();
+        return spec ? spec.skill : 'past';
     },
 
     prepareQuestion() {
-        return this.pickVerbId();
+        const spec = this.getCurrentQuestionSpec();
+        if (!spec) {
+            return null;
+        }
+        return spec.verbId;
     },
 
     getCurrentVerb() {
-        return getVerbById(this.currentVerbId);
+        const spec = this.getCurrentQuestionSpec();
+        if (!spec) {
+            return null;
+        }
+        return getVerbById(spec.verbId);
+    },
+
+    getVerbPool() {
+        return getVerbPoolForLevel(this.currentLevel);
     },
 
     recordAnswer(isCorrect) {
-        if (!this.currentVerbId) {
+        const spec = this.getCurrentQuestionSpec();
+        if (!spec) {
             return;
         }
-        if (!this.verbStats[this.currentVerbId]) {
-            this.verbStats[this.currentVerbId] = { correct: 0, wrong: 0 };
+        const key = spec.verbId;
+        if (!this.verbStats[key]) {
+            this.verbStats[key] = { correct: 0, wrong: 0 };
         }
         if (isCorrect) {
             this.correctAnswers++;
-            this.verbStats[this.currentVerbId].correct++;
+            this.verbStats[key].correct++;
         } else {
             this.wrongAnswers++;
-            this.verbStats[this.currentVerbId].wrong++;
+            this.verbStats[key].wrong++;
         }
     },
 
-    checkMcAnswer(selectedPast) {
+    checkMcAnswer(selected) {
         const verb = this.getCurrentVerb();
+        const skill = this.getCurrentSkill();
         if (!verb) {
-            return { isCorrect: false, correctPast: '' };
+            return { isCorrect: false, correctAnswer: '', skill };
         }
-        const isCorrect = isPastAnswerCorrect(verb, selectedPast);
+
+        const isCorrect =
+            skill === 'past'
+                ? isPastAnswerCorrect(verb, selected)
+                : isTranslationAnswerCorrect(verb, selected);
+
         this.recordAnswer(isCorrect);
         return {
             isCorrect,
-            correctPast: getPrimaryPastDisplay(verb),
-            selectedPast
+            correctAnswer:
+                skill === 'past'
+                    ? getPrimaryPastDisplay(verb)
+                    : getPrimaryTranslationDisplay(verb),
+            skill
         };
     },
 
     checkTypingAnswer(userInput) {
         const verb = this.getCurrentVerb();
+        const skill = this.getCurrentSkill();
         if (!verb) {
-            return { isCorrect: false, correctPast: '' };
+            return { isCorrect: false, correctAnswer: '', skill };
         }
-        const isCorrect = isPastAnswerCorrect(verb, userInput);
+
+        const isCorrect =
+            skill === 'past'
+                ? isPastAnswerCorrect(verb, userInput)
+                : isTranslationAnswerCorrect(verb, userInput);
+
         this.recordAnswer(isCorrect);
         return {
             isCorrect,
-            correctPast: getPrimaryPastDisplay(verb),
-            userInput
+            correctAnswer:
+                skill === 'past'
+                    ? getPrimaryPastDisplay(verb)
+                    : getPrimaryTranslationDisplay(verb),
+            skill
         };
     },
 
     nextQuestion() {
         this.currentQuestion++;
-        const config = this.getCurrentLevelConfig();
-        return this.currentQuestion <= config.questionsPerLevel;
+        return this.currentQuestion <= this.getQuestionsPerLevel();
     },
 
     startLevelQuestions() {
         this.currentQuestion = 0;
         this.correctAnswers = 0;
         this.wrongAnswers = 0;
-        this.buildQuestionTypeQueue();
+        this.buildQuestionQueue();
     },
 
     isLevelPassed() {
-        const config = this.getCurrentLevelConfig();
-        return this.correctAnswers / config.questionsPerLevel >= this.successThreshold;
+        const total = this.getQuestionsPerLevel();
+        return this.correctAnswers / total >= this.successThreshold;
     },
 
     getLevelResults() {
-        const config = this.getCurrentLevelConfig();
-        const total = config.questionsPerLevel;
+        const total = this.getQuestionsPerLevel();
         const pct = Math.round((this.correctAnswers / total) * 100);
         return {
             level: this.currentLevel,
@@ -198,15 +239,19 @@ const GameLogic = {
     },
 
     advanceLevel() {
-        if (this.currentLevel < this.levels.length) {
+        if (this.currentLevel < getMaxLevel()) {
             this.currentLevel++;
             return true;
         }
         return false;
     },
 
+    getMaxLevel() {
+        return getMaxLevel();
+    },
+
     hasVerbs() {
-        return getAllVerbs().length > 0;
+        return getVerbPoolForLevel(1).length > 0;
     }
 };
 

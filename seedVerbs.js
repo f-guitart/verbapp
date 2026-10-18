@@ -1,43 +1,33 @@
-/** Default irregular verbs — editable in Admin or via import/export */
+/** Fallback verbs if verbs.json is unavailable */
 export const SEED_VERBS = [
     {
         id: 'be',
-        base: 'be',
-        past: 'was',
-        wrong1: 'be',
-        wrong2: 'beed',
-        pastAliases: ['were']
+        verb: 'be',
+        past_simple: 'was/were',
+        translation: 'ser / estar'
     },
     {
         id: 'bite',
-        base: 'bite',
-        past: 'bit',
-        wrong1: 'bited',
-        wrong2: 'bite',
-        pastAliases: []
+        verb: 'bite',
+        past_simple: 'bit',
+        translation: 'mossegar'
     },
     {
         id: 'break',
-        base: 'break',
-        past: 'broke',
-        wrong1: 'breaked',
-        wrong2: 'break',
-        pastAliases: []
+        verb: 'break',
+        past_simple: 'broke',
+        translation: 'trencar'
     },
     {
         id: 'bring',
-        base: 'bring',
-        past: 'brought',
-        wrong1: 'bringed',
-        wrong2: 'bring',
-        pastAliases: []
+        verb: 'bring',
+        past_simple: 'brought',
+        translation: 'portar'
     },
     {
         id: 'buy',
-        base: 'buy',
-        past: 'bought',
-        wrong1: 'buyed',
-        wrong2: 'buy',
-        pastAliases: []
+        verb: 'buy',
+        past_simple: 'bought',
+        translation: 'comprar'
     }
 ];

@@ -2,11 +2,14 @@ import Storage from './storage.js';
 import Profiles from './profiles.js';
 import GameLogic from './gameLogic.js';
 import Admin from './admin.js';
+import Study from './study.js';
 import {
-    getMcOptions,
+    getMcPastOptions,
+    getTranslationMcOptions,
     bootstrapVerbs,
-    isPastAnswerCorrect,
-    getPrimaryPastDisplay
+    isMcOptionCorrect,
+    getPrimaryPastDisplay,
+    getPrimaryTranslationDisplay
 } from './verbs.js';
 
 const App = {
@@ -21,6 +24,7 @@ const App = {
         await bootstrapVerbs();
         this.syncTimerToggle();
         Admin.init();
+        Study.init();
         setTimeout(() => this.showProfileScreen(), 50);
     },
 
@@ -29,7 +33,8 @@ const App = {
             profile: document.getElementById('profile-screen'),
             game: document.getElementById('game-screen'),
             levelComplete: document.getElementById('level-complete-screen'),
-            admin: document.getElementById('admin-screen')
+            admin: document.getElementById('admin-screen'),
+            study: document.getElementById('study-screen')
         };
     },
 
@@ -60,6 +65,10 @@ const App = {
         document.getElementById('open-admin-btn').addEventListener('click', () => {
             this.showScreen('admin');
             Admin.renderList();
+        });
+
+        document.getElementById('open-study-btn').addEventListener('click', () => {
+            Study.show();
         });
 
         document.getElementById('timer-toggle').addEventListener('change', (e) => {
@@ -143,6 +152,7 @@ const App = {
 
         document.getElementById('current-level').textContent = GameLogic.currentLevel;
         document.getElementById('total-questions').textContent = config.questionsPerLevel;
+        document.getElementById('level-verb-count').textContent = config.description;
 
         this.showScreen('game');
         this.nextQuestion();
@@ -154,6 +164,7 @@ const App = {
             return;
         }
 
+        const config = GameLogic.getCurrentLevelConfig();
         document.getElementById('question-number').textContent = GameLogic.currentQuestion;
 
         const verbId = GameLogic.prepareQuestion();
@@ -166,23 +177,34 @@ const App = {
 
         document.getElementById('prompt-base').textContent = verb.base;
 
-        const qType = GameLogic.getCurrentQuestionType();
+        const inputMode = GameLogic.getCurrentQuestionType();
+        const skill = GameLogic.getCurrentSkill();
         const mcPanel = document.getElementById('mc-panel');
         const typingPanel = document.getElementById('typing-panel');
         const modeHint = document.getElementById('mode-hint');
+        const typingInput = document.getElementById('typing-answer');
 
-        if (qType === 'mc') {
-            modeHint.textContent = 'Choose the past tense';
+        if (skill === 'past') {
+            modeHint.textContent =
+                inputMode === 'mc' ? 'Choose the past tense' : 'Type the past tense';
+            typingInput.placeholder = 'Past tense';
+        } else {
+            modeHint.textContent =
+                inputMode === 'mc'
+                    ? 'Choose the Catalan translation'
+                    : 'Type the Catalan translation';
+            typingInput.placeholder = 'Translation';
+        }
+
+        if (inputMode === 'mc') {
             mcPanel.style.display = 'block';
             typingPanel.style.display = 'none';
-            this.setupMcButtons(verb);
+            this.setupMcButtons(verb, skill);
         } else {
-            modeHint.textContent = 'Type the past tense';
             mcPanel.style.display = 'none';
             typingPanel.style.display = 'block';
-            const input = document.getElementById('typing-answer');
-            input.value = '';
-            input.focus();
+            typingInput.value = '';
+            typingInput.focus();
         }
 
         const feedbackEl = document.getElementById('feedback');
@@ -202,10 +224,15 @@ const App = {
         this.isAnswering = true;
     },
 
-    setupMcButtons(verb) {
+    setupMcButtons(verb, skill) {
         const container = document.getElementById('answer-options');
         container.innerHTML = '';
-        getMcOptions(verb).forEach((option) => {
+        const options =
+            skill === 'past'
+                ? getMcPastOptions(verb)
+                : getTranslationMcOptions(verb, GameLogic.getVerbPool());
+
+        options.forEach((option) => {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'answer-btn';
@@ -219,17 +246,22 @@ const App = {
         });
     },
 
+    feedbackLabel(skill) {
+        return skill === 'past' ? 'past tense' : 'translation';
+    },
+
     handleMcAnswer(selected) {
         this.isAnswering = false;
         this.clearTimer();
 
         const result = GameLogic.checkMcAnswer(selected);
         const feedbackEl = document.getElementById('feedback');
-
         const verb = GameLogic.getCurrentVerb();
+        const skill = result.skill;
+
         document.querySelectorAll('.answer-btn').forEach((btn) => {
             btn.classList.remove('correct', 'wrong');
-            if (verb && isPastAnswerCorrect(verb, btn.textContent)) {
+            if (verb && isMcOptionCorrect(verb, skill, btn.textContent)) {
                 btn.classList.add('correct');
             }
             if (btn.textContent === selected && !result.isCorrect) {
@@ -241,7 +273,7 @@ const App = {
             feedbackEl.textContent = 'Correct!';
             feedbackEl.className = 'feedback correct';
         } else {
-            feedbackEl.textContent = `Wrong. The past tense is "${result.correctPast}".`;
+            feedbackEl.textContent = `Wrong. The ${this.feedbackLabel(skill)} is "${result.correctAnswer}".`;
             feedbackEl.className = 'feedback wrong';
         }
 
@@ -259,7 +291,7 @@ const App = {
             feedbackEl.textContent = 'Correct!';
             feedbackEl.className = 'feedback correct';
         } else {
-            feedbackEl.textContent = `Wrong. The past tense is "${result.correctPast}".`;
+            feedbackEl.textContent = `Wrong. The ${this.feedbackLabel(result.skill)} is "${result.correctAnswer}".`;
             feedbackEl.className = 'feedback wrong';
         }
 
@@ -300,11 +332,19 @@ const App = {
             return;
         }
 
-        const qType = GameLogic.getCurrentQuestionType();
+        const inputMode = GameLogic.getCurrentQuestionType();
+        const skill = GameLogic.getCurrentSkill();
         const verb = GameLogic.getCurrentVerb();
-        const correctPast = verb ? getPrimaryPastDisplay(verb) : '';
+        const correctAnswer =
+            skill === 'past'
+                ? verb
+                    ? getPrimaryPastDisplay(verb)
+                    : ''
+                : verb
+                  ? getPrimaryTranslationDisplay(verb)
+                  : '';
 
-        if (qType === 'mc') {
+        if (inputMode === 'mc') {
             GameLogic.checkMcAnswer('');
         } else {
             GameLogic.checkTypingAnswer('');
@@ -312,12 +352,12 @@ const App = {
 
         this.isAnswering = false;
         const feedbackEl = document.getElementById('feedback');
-        feedbackEl.textContent = `Time's up. The past tense is "${correctPast}".`;
+        feedbackEl.textContent = `Time's up. The ${this.feedbackLabel(skill)} is "${correctAnswer}".`;
         feedbackEl.className = 'feedback wrong';
 
-        if (qType === 'mc' && verb) {
+        if (inputMode === 'mc' && verb) {
             document.querySelectorAll('.answer-btn').forEach((btn) => {
-                if (isPastAnswerCorrect(verb, btn.textContent)) {
+                if (isMcOptionCorrect(verb, skill, btn.textContent)) {
                     btn.classList.add('correct');
                 }
             });
@@ -341,16 +381,16 @@ const App = {
         const retryBtn = document.getElementById('retry-level-btn');
 
         const thresholdPct = Math.round(GameLogic.successThreshold * 100);
+        const maxLevel = GameLogic.getMaxLevel();
 
         if (results.passed) {
             titleEl.textContent = 'Level complete!';
             messageEl.textContent = `You scored ${results.percentage}%. Great job!`;
             messageEl.className = 'message success';
 
-            const atMaxLevel = GameLogic.currentLevel >= GameLogic.levels.length;
-            if (atMaxLevel) {
+            if (GameLogic.currentLevel >= maxLevel) {
                 Profiles.updateProfileProgress(GameLogic.currentLevel, GameLogic.verbStats);
-                messageEl.textContent = 'You finished all 3 levels. Keep practicing!';
+                messageEl.textContent = `You finished all ${maxLevel} levels. Keep practicing!`;
                 nextBtn.style.display = 'none';
                 retryBtn.textContent = 'Play again';
                 retryBtn.style.display = 'inline-block';

@@ -23,6 +23,7 @@
             </div>
             <div class="profile-actions">
                 <button id="play-selected-btn" class="btn btn-primary" type="button">Play</button>
+                <button id="open-study-btn" class="btn btn-secondary" type="button">Study sheet</button>
                 <button id="open-admin-btn" class="btn btn-secondary" type="button">Admin</button>
             </div>
             <label class="timer-toggle-label">
@@ -36,6 +37,7 @@
                 <div class="level-info">
                     <span>Level <span id="current-level">1</span></span>
                     <span>Question <span id="question-number">1</span>/<span id="total-questions">10</span></span>
+                    <span class="level-verb-hint"><span id="level-verb-count"></span></span>
                 </div>
                 <div id="timer-container" class="timer-container" style="display: none;">
                     <div id="timer" class="timer">10</div>
@@ -103,12 +105,16 @@
                     <input type="text" id="admin-past" required autocomplete="off">
                 </label>
                 <label>
-                    Wrong option 1
-                    <input type="text" id="admin-wrong1" required autocomplete="off">
+                    Translation (Catalan)
+                    <input type="text" id="admin-translation" required autocomplete="off">
                 </label>
                 <label>
-                    Wrong option 2
-                    <input type="text" id="admin-wrong2" required autocomplete="off">
+                    Wrong option 1 (past MC)
+                    <input type="text" id="admin-wrong1" autocomplete="off">
+                </label>
+                <label>
+                    Wrong option 2 (past MC)
+                    <input type="text" id="admin-wrong2" autocomplete="off">
                 </label>
                 <label>
                     Extra accepted past forms (comma-separated, e.g. were for be)
@@ -130,6 +136,32 @@
                 </label>
             </div>
             <button id="admin-back-btn" class="btn btn-link" type="button">Back to profiles</button>
+        </div>
+
+        <div id="study-screen" class="screen">
+            <h2>Study sheet</h2>
+            <p class="hint">Tap a column heading to show or hide the whole column.</p>
+            <div class="study-table-wrap">
+                <table class="study-table">
+                    <thead>
+                        <tr>
+                            <th>Verb</th>
+                            <th>
+                                <button type="button" class="study-col-toggle" data-column="past" aria-pressed="false">
+                                    Past <span class="study-toggle-hint">(tap to reveal)</span>
+                                </button>
+                            </th>
+                            <th>
+                                <button type="button" class="study-col-toggle" data-column="translation" aria-pressed="false">
+                                    Translation <span class="study-toggle-hint">(tap to reveal)</span>
+                                </button>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="study-table-body"></tbody>
+                </table>
+            </div>
+            <button id="study-back-btn" class="btn btn-link" type="button">Back to profiles</button>
         </div>
     </div>
 

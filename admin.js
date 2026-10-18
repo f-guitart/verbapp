@@ -100,7 +100,7 @@ const Admin = {
             row.innerHTML = `
                 <div class="admin-verb-summary">
                     <strong>${escapeHtml(verb.base)}</strong>
-                    <span class="admin-verb-past">→ ${escapeHtml(verb.past)}</span>
+                    <span class="admin-verb-past">→ ${escapeHtml(verb.past)} · ${escapeHtml(verb.translation || '')}</span>
                 </div>
                 <div class="admin-verb-actions">
                     <button type="button" class="btn btn-secondary btn-small" data-edit="${escapeHtml(verb.id)}">Edit</button>
@@ -129,6 +129,7 @@ const Admin = {
         document.getElementById('admin-past').value = verb.past;
         document.getElementById('admin-wrong1').value = verb.wrong1;
         document.getElementById('admin-wrong2').value = verb.wrong2;
+        document.getElementById('admin-translation').value = verb.translation || '';
         document.getElementById('admin-aliases').value = (verb.pastAliases || []).join(', ');
         document.getElementById('admin-form-title').textContent = 'Edit verb';
         document.getElementById('admin-cancel-edit-btn').style.display = 'inline-block';
@@ -155,6 +156,7 @@ const Admin = {
             past: document.getElementById('admin-past').value,
             wrong1: document.getElementById('admin-wrong1').value,
             wrong2: document.getElementById('admin-wrong2').value,
+            translation: document.getElementById('admin-translation').value,
             pastAliases,
             id: this.editingId || undefined,
             _originalId: this.editingId || undefined
