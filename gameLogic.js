@@ -1,4 +1,9 @@
-import { getAllVerbs, getVerbById, isPastAnswerCorrect, getPrimaryPastDisplay } from './verbs.js';
+import {
+    getAllVerbs,
+    getVerbById,
+    isPastAnswerCorrect,
+    getPrimaryPastDisplay
+} from './verbs.js';
 
 const GameLogic = {
     levels: [
@@ -137,7 +142,7 @@ const GameLogic = {
         if (!verb) {
             return { isCorrect: false, correctPast: '' };
         }
-        const isCorrect = normalizeCompare(selectedPast, verb.past);
+        const isCorrect = isPastAnswerCorrect(verb, selectedPast);
         this.recordAnswer(isCorrect);
         return {
             isCorrect,
@@ -204,9 +209,5 @@ const GameLogic = {
         return getAllVerbs().length > 0;
     }
 };
-
-function normalizeCompare(a, b) {
-    return String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
-}
 
 export default GameLogic;

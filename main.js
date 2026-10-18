@@ -2,7 +2,12 @@ import Storage from './storage.js';
 import Profiles from './profiles.js';
 import GameLogic from './gameLogic.js';
 import Admin from './admin.js';
-import { getMcOptions, bootstrapVerbs } from './verbs.js';
+import {
+    getMcOptions,
+    bootstrapVerbs,
+    isPastAnswerCorrect,
+    getPrimaryPastDisplay
+} from './verbs.js';
 
 const App = {
     screens: {},
@@ -221,9 +226,10 @@ const App = {
         const result = GameLogic.checkMcAnswer(selected);
         const feedbackEl = document.getElementById('feedback');
 
+        const verb = GameLogic.getCurrentVerb();
         document.querySelectorAll('.answer-btn').forEach((btn) => {
             btn.classList.remove('correct', 'wrong');
-            if (btn.textContent === result.correctPast) {
+            if (verb && isPastAnswerCorrect(verb, btn.textContent)) {
                 btn.classList.add('correct');
             }
             if (btn.textContent === selected && !result.isCorrect) {
@@ -296,7 +302,7 @@ const App = {
 
         const qType = GameLogic.getCurrentQuestionType();
         const verb = GameLogic.getCurrentVerb();
-        const correctPast = verb ? verb.past : '';
+        const correctPast = verb ? getPrimaryPastDisplay(verb) : '';
 
         if (qType === 'mc') {
             GameLogic.checkMcAnswer('');
@@ -309,9 +315,9 @@ const App = {
         feedbackEl.textContent = `Time's up. The past tense is "${correctPast}".`;
         feedbackEl.className = 'feedback wrong';
 
-        if (qType === 'mc') {
+        if (qType === 'mc' && verb) {
             document.querySelectorAll('.answer-btn').forEach((btn) => {
-                if (btn.textContent === correctPast) {
+                if (isPastAnswerCorrect(verb, btn.textContent)) {
                     btn.classList.add('correct');
                 }
             });

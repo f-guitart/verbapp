@@ -21,7 +21,21 @@ export function isPastAnswerCorrect(verb, userInput) {
 }
 
 export function getPrimaryPastDisplay(verb) {
-    return verb.past;
+    const seen = new Set();
+    const parts = [];
+    for (const form of [verb.past, ...(verb.pastAliases || [])]) {
+        const trimmed = (form || '').trim();
+        if (!trimmed) {
+            continue;
+        }
+        const key = normalizeAnswer(trimmed);
+        if (seen.has(key)) {
+            continue;
+        }
+        seen.add(key);
+        parts.push(trimmed);
+    }
+    return parts.length > 1 ? parts.join(' / ') : parts[0] || verb.past;
 }
 
 export function getAllVerbs() {
@@ -42,12 +56,17 @@ export function validateVerb(verb, existingIds = []) {
         return { valid: false, message: 'Base, past, and both wrong options are required.' };
     }
 
-    const pastNorm = normalizeAnswer(past);
     const w1 = normalizeAnswer(wrong1);
     const w2 = normalizeAnswer(wrong2);
+    const accepted = new Set(
+        getAcceptedPastForms({ past, pastAliases: verb.pastAliases || [] })
+    );
 
-    if (w1 === pastNorm || w2 === pastNorm) {
-        return { valid: false, message: 'Wrong options must differ from the correct past tense.' };
+    if (accepted.has(w1) || accepted.has(w2)) {
+        return {
+            valid: false,
+            message: 'Wrong options must differ from all accepted past forms.'
+        };
     }
     if (w1 === w2) {
         return { valid: false, message: 'Wrong options must be different from each other.' };
