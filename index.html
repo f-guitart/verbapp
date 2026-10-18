@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Irregular Verbs Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <header class="app-header">
+            <h1>Irregular Verbs</h1>
+            <p class="tagline">Past tense practice</p>
+        </header>
+
+        <div id="profile-screen" class="screen active">
+            <h2>Profiles</h2>
+            <p class="hint">Select a profile, then play. Each profile saves its own level.</p>
+            <div id="profile-list"></div>
+            <div class="profile-input-group">
+                <input type="text" id="new-profile-name" placeholder="New profile name" maxlength="20" autocomplete="off">
+                <button id="create-profile-btn" class="btn btn-secondary" type="button">Create &amp; play</button>
+            </div>
+            <div class="profile-actions">
+                <button id="play-selected-btn" class="btn btn-primary" type="button">Play</button>
+                <button id="open-admin-btn" class="btn btn-secondary" type="button">Admin</button>
+            </div>
+            <label class="timer-toggle-label">
+                <input type="checkbox" id="timer-toggle">
+                Enable timer (shorter time on higher levels)
+            </label>
+        </div>
+
+        <div id="game-screen" class="screen">
+            <div class="game-header">
+                <div class="level-info">
+                    <span>Level <span id="current-level">1</span></span>
+                    <span>Question <span id="question-number">1</span>/<span id="total-questions">10</span></span>
+                </div>
+                <div id="timer-container" class="timer-container" style="display: none;">
+                    <div id="timer" class="timer">10</div>
+                </div>
+            </div>
+
+            <p id="mode-hint" class="mode-hint">Choose the past tense</p>
+            <div class="verb-prompt">
+                <span class="verb-prompt-label">Infinitive</span>
+                <span id="prompt-base" class="verb-prompt-word">go</span>
+            </div>
+
+            <div id="mc-panel">
+                <div class="answer-options" id="answer-options"></div>
+            </div>
+
+            <div id="typing-panel" style="display: none;">
+                <div class="typing-row">
+                    <input type="text" id="typing-answer" class="typing-input" placeholder="Past tense" autocomplete="off" autocapitalize="off">
+                    <button id="submit-typing-btn" class="btn btn-primary" type="button">Check</button>
+                </div>
+            </div>
+
+            <div id="feedback" class="feedback"></div>
+        </div>
+
+        <div id="level-complete-screen" class="screen">
+            <h2 id="level-complete-title">Level complete!</h2>
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-label">Correct</span>
+                    <span id="correct-count" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Wrong</span>
+                    <span id="wrong-count" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Score</span>
+                    <span id="score-percent" class="stat-value">0%</span>
+                </div>
+            </div>
+            <div id="level-complete-message" class="message"></div>
+            <div class="button-group">
+                <button id="next-level-btn" class="btn btn-primary" type="button">Next level</button>
+                <button id="retry-level-btn" class="btn btn-secondary" type="button">Try again</button>
+                <button id="back-to-profiles-btn" class="btn btn-link" type="button">Back to profiles</button>
+            </div>
+        </div>
+
+        <div id="admin-screen" class="screen">
+            <h2>Admin — verbs</h2>
+            <p class="hint">Each verb needs a correct past and two wrong options for multiple choice.</p>
+
+            <div id="admin-verb-list" class="admin-verb-list"></div>
+
+            <h3 id="admin-form-title">Add verb</h3>
+            <form id="admin-verb-form" class="admin-form" onsubmit="return false;">
+                <label>
+                    Base (infinitive)
+                    <input type="text" id="admin-base" required autocomplete="off">
+                </label>
+                <label>
+                    Past tense (correct)
+                    <input type="text" id="admin-past" required autocomplete="off">
+                </label>
+                <label>
+                    Wrong option 1
+                    <input type="text" id="admin-wrong1" required autocomplete="off">
+                </label>
+                <label>
+                    Wrong option 2
+                    <input type="text" id="admin-wrong2" required autocomplete="off">
+                </label>
+                <label>
+                    Extra accepted spellings (comma-separated, for typing)
+                    <input type="text" id="admin-aliases" placeholder="e.g. burnt" autocomplete="off">
+                </label>
+            </form>
+            <div class="admin-form-actions">
+                <button id="admin-save-btn" class="btn btn-primary" type="button">Save verb</button>
+                <button id="admin-cancel-edit-btn" class="btn btn-secondary" type="button" style="display: none;">Cancel edit</button>
+            </div>
+            <div id="admin-message" class="feedback"></div>
+
+            <div class="admin-io">
+                <button id="admin-reload-file-btn" class="btn btn-secondary" type="button">Reload verbs.json</button>
+                <button id="admin-export-btn" class="btn btn-secondary" type="button">Export JSON</button>
+                <label class="btn btn-secondary import-label">
+                    Import JSON
+                    <input type="file" id="admin-import-input" accept="application/json,.json" hidden>
+                </label>
+            </div>
+            <button id="admin-back-btn" class="btn btn-link" type="button">Back to profiles</button>
+        </div>
+    </div>
+
+    <script type="module" src="main.js"></script>
+</body>
+</html>
