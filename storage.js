@@ -53,6 +53,19 @@ const Storage = {
         return Object.keys(this.getProfiles().profiles);
     },
 
+    deleteProfile(profileName) {
+        const data = this.getProfiles();
+        if (!data.profiles[profileName]) {
+            return false;
+        }
+        delete data.profiles[profileName];
+        if (data.currentProfile === profileName) {
+            data.currentProfile = null;
+        }
+        this.saveProfiles(data);
+        return true;
+    },
+
     getSettings() {
         const raw = localStorage.getItem(SETTINGS_KEY);
         if (raw) {

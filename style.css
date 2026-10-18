@@ -132,6 +132,13 @@ h3 {
     border-color: #4f46e5;
 }
 
+.profile-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
 .profile-level-chip {
     background: rgba(79, 70, 229, 0.12);
     padding: 4px 10px;
@@ -139,6 +146,17 @@ h3 {
     font-size: 0.8rem;
     font-weight: 600;
     color: #4338ca;
+}
+
+.profile-delete-btn {
+    margin: 0;
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    color: #b91c1c;
+}
+
+.profile-delete-btn:hover {
+    color: #991b1b;
 }
 
 .profile-input-group {

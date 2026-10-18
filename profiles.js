@@ -31,11 +31,20 @@ const Profiles = {
 
                 profileItem.innerHTML = `
                     <div class="profile-name"><strong>${this.escapeHtml(name)}</strong></div>
-                    <div class="profile-level-chip">Level ${level}</div>
+                    <div class="profile-meta">
+                        <div class="profile-level-chip">Level ${level}</div>
+                        <button type="button" class="btn btn-link btn-small profile-delete-btn" aria-label="Delete profile ${this.escapeHtml(name)}">Delete</button>
+                    </div>
                 `;
 
                 profileItem.addEventListener('click', () => {
                     this.selectProfile(name);
+                });
+
+                const deleteBtn = profileItem.querySelector('.profile-delete-btn');
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.deleteProfile(name);
                 });
 
                 this.container.appendChild(profileItem);
@@ -49,6 +58,19 @@ const Profiles = {
         if (this.onProfileSelected) {
             this.onProfileSelected(profileName);
         }
+    },
+
+    deleteProfile(profileName) {
+        const message = `Delete profile "${profileName}"? Level and stats will be lost.`;
+        if (!confirm(message)) {
+            return { success: false, message: 'Cancelled' };
+        }
+
+        if (Storage.deleteProfile(profileName)) {
+            this.render();
+            return { success: true, message: 'Profile deleted.' };
+        }
+        return { success: false, message: 'Profile not found.' };
     },
 
     createProfile(name) {
