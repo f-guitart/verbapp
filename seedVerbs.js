@@ -29,5 +29,35 @@ export const SEED_VERBS = [
         verb: 'buy',
         past_simple: 'bought',
         translation: 'comprar'
+    },
+    {
+        id: 'can',
+        verb: 'can',
+        past_simple: 'could',
+        translation: 'poder'
+    },
+    {
+        id: 'catch',
+        verb: 'catch',
+        past_simple: 'caught',
+        translation: 'agafar'
+    },
+    {
+        id: 'come',
+        verb: 'come',
+        past_simple: 'came',
+        translation: 'venir'
+    },
+    {
+        id: 'cost',
+        verb: 'cost',
+        past_simple: 'cost',
+        translation: 'valer'
+    },
+    {
+        id: 'cut',
+        verb: 'cut',
+        past_simple: 'cut',
+        translation: 'tallar'
     }
 ];
